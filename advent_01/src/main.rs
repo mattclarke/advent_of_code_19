@@ -22,17 +22,22 @@ pub fn calculate_fuel_plus_fuel_mass(mass: i32) -> i32 {
     return result;
 }
 
-pub fn string_to_ints(str: String) -> Vec<i32> {
-    let parts = str.split("\n");
+pub fn string_to_ints(str: String, sep: char) -> Vec<i32> {
+    let parts = str.split(sep);
     let vec = parts.flat_map(|x| x.parse::<i32>()).collect::<Vec<i32>>();
     return vec;
 }
 
-fn main() -> std::io::Result<()> {
-    let mut file = File::open("input_data.txt")?;
+fn read_file() -> String {
+    let mut file = File::open("input_data.txt").expect("No such file");
     let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let ints = string_to_ints(contents);
+    file.read_to_string(&mut contents).unwrap();
+    return contents;
+}
+
+fn main() -> std::io::Result<()> {
+    let contents = read_file();
+    let ints = string_to_ints(contents, '\n');
     // Part 1
     // let result = ints
     //     .iter()
@@ -82,8 +87,7 @@ mod tests {
 
     #[test]
     fn string_of_ints_gives_ints_as_vec() {
-        println!("123\n456\n");
-        let result = string_to_ints(String::from("100756\n123\n"));
+        let result = string_to_ints(String::from("100756\n123\n"), '\n');
         assert_eq!(result.len(), 2);
         assert_eq!(result[0], 100756);
         assert_eq!(result[1], 123);
