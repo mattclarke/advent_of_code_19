@@ -1,7 +1,7 @@
+use std::cmp;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
-use std::cmp;
 
 fn calculate_total_depths(orbits: &HashMap<String, Vec<String>>) -> u32 {
     // Uses preorder traversal
@@ -12,7 +12,6 @@ fn calculate_total_depths(orbits: &HashMap<String, Vec<String>>) -> u32 {
     while path.len() > 0 {
         let curr = path.pop().unwrap();
         let nodes = orbits.get(&curr.0).unwrap();
-        // println!("{:?}", path);
         result += curr.1;
         if nodes.len() > 0 {
             for n in nodes {
@@ -24,54 +23,51 @@ fn calculate_total_depths(orbits: &HashMap<String, Vec<String>>) -> u32 {
     return result;
 }
 
-// fn traversal(orbits: &HashMap<String, Vec<String>>, current: String) {
+fn traversal(
+    orbits: &HashMap<String, Vec<String>>,
+    current: &str,
+    route: &mut Vec<String>,
+    route_to_santa: &mut Vec<String>,
+    route_to_me: &mut Vec<String>,
+) {
+    if current == "SAN" {
+        route_to_santa.clone_from(route);
+    }
+    if current == "YOU" {
+        route_to_me.clone_from(route);
+    }
+    route.push(current.to_string());
+    let nodes = orbits.get(current).unwrap();
+    for n in nodes {
+        traversal(orbits, n, route, route_to_santa, route_to_me);
+    }
+    route.remove(route.len() - 1);
+}
 
-// }
-
-fn find_common_ancestor(orbits: &HashMap<String, Vec<String>>) -> usize {
-    // Uses preorder traversal
+fn find_distance_between(orbits: &HashMap<String, Vec<String>>) -> usize {
+    // Uses recursion
     let mut result = 0;
-    let mut path: Vec<(String, u32)> = Vec::new();
-    path.push((String::from("COM"), 0));
+
     let mut route: Vec<String> = Vec::new();
     let mut route_to_santa: Vec<String> = Vec::new();
     let mut route_to_me: Vec<String> = Vec::new();
-
-
-    while path.len() > 0 {
-        let curr = path.pop().unwrap();
-        let nodes = orbits.get(&curr.0).unwrap();
-       
-        if nodes.len() > 0 {
-            route.push(curr.0);
-            println!("route = {:?}", route);
-            for n in nodes {
-                if n == "SAN" {
-                    // println!("Yo! Santa!");
-                    route_to_santa = route.to_vec();
-                }
-                if n == "YOU" {
-                    // println!("Here I am!");
-                    route_to_me = route.to_vec();
-                }
-                path.push((n.to_string(), curr.1 + 1));
-                println!("path = {:?}", path);
-            }
-        }
-        else {
-            route.remove(route.len()-1);
-        }
-    }
-
-    println!("santa = {:?}", route_to_santa);
-    println!("me = {:?}", route_to_me);
+    traversal(
+        &orbits,
+        "COM",
+        &mut route,
+        &mut route_to_santa,
+        &mut route_to_me,
+    );
 
     let max_len = cmp::max(route_to_santa.len(), route_to_me.len());
 
     for i in 0..max_len {
-        if route_to_santa[i] != route_to_me[i] {
+        if i == route_to_santa.len()
+            || i == route_to_me.len()
+            || route_to_santa[i] != route_to_me[i]
+        {
             result = route_to_santa.len() - i + route_to_me.len() - i;
-            break
+            break;
         }
     }
 
@@ -123,8 +119,8 @@ fn main() -> std::io::Result<()> {
     let orbits = build_orbit_map(edges);
     // Part 1 = 270768
     println!("Result 1 = {}", calculate_total_depths(&orbits));
-    // Part 2 = 
-    println!("Result 2 = {}", find_common_ancestor(&orbits));
+    // Part 2 = 451
+    println!("Result 2 = {}", find_distance_between(&orbits));
 
     Ok(())
 }
@@ -133,8 +129,8 @@ fn main() -> std::io::Result<()> {
 mod tests {
     use crate::build_orbit_map;
     use crate::calculate_total_depths;
+    use crate::find_distance_between;
     use crate::string_to_edges;
-    use crate::find_common_ancestor;
 
     #[test]
     fn string_of_ints_gives_ints_as_vec() {
@@ -155,20 +151,61 @@ mod tests {
 
     #[test]
     fn it_works_for_example_2() {
-        let input = String::from("COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nK)YOU\nI)SAN");
+        let input =
+            String::from("COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nK)YOU\nI)SAN");
         let edges = string_to_edges(input);
         let orbits = build_orbit_map(edges);
 
-        assert_eq!(find_common_ancestor(&orbits), 4);
+        assert_eq!(find_distance_between(&orbits), 4);
     }
 
     #[test]
     fn it_works_for_example_3() {
-        let input = String::from("COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nH)YOU\nI)SAN");
+        let input =
+            String::from("COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nH)YOU\nI)SAN");
         let edges = string_to_edges(input);
         let orbits = build_orbit_map(edges);
 
-        assert_eq!(find_common_ancestor(&orbits), 46);
+        assert_eq!(find_distance_between(&orbits), 5);
     }
 
+    #[test]
+    fn it_works_for_example_4() {
+        let input =
+            String::from("COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nL)YOU\nB)SAN");
+        let edges = string_to_edges(input);
+        let orbits = build_orbit_map(edges);
+
+        assert_eq!(find_distance_between(&orbits), 6);
+    }
+
+    #[test]
+    fn it_works_for_example_5() {
+        let input =
+            String::from("COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nB)YOU\nL)SAN");
+        let edges = string_to_edges(input);
+        let orbits = build_orbit_map(edges);
+
+        assert_eq!(find_distance_between(&orbits), 6);
+    }
+
+    #[test]
+    fn it_works_for_example_6() {
+        let input =
+            String::from("COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nB)YOU\nB)SAN");
+        let edges = string_to_edges(input);
+        let orbits = build_orbit_map(edges);
+
+        assert_eq!(find_distance_between(&orbits), 0);
+    }
+
+    #[test]
+    fn it_works_for_example_7() {
+        let input =
+            String::from("COM)B\nB)C\nC)D\nD)E\nE)F\nB)G\nG)H\nD)I\nE)J\nJ)K\nK)L\nG)YOU\nC)SAN");
+        let edges = string_to_edges(input);
+        let orbits = build_orbit_map(edges);
+
+        assert_eq!(find_distance_between(&orbits), 2);
+    }
 }
