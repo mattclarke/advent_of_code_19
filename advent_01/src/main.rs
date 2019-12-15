@@ -1,12 +1,12 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-pub fn calculate_fuel(mass: i32) -> i32 {
+fn calculate_fuel(mass: i32) -> i32 {
     let result = (mass / 3) - 2;
     return result;
 }
 
-pub fn calculate_fuel_plus_fuel_mass(mass: i32) -> i32 {
+fn calculate_fuel_plus_fuel_mass(mass: i32) -> i32 {
     let mut result = 0;
     let mut curr_mass = mass;
 
@@ -22,7 +22,7 @@ pub fn calculate_fuel_plus_fuel_mass(mass: i32) -> i32 {
     return result;
 }
 
-pub fn string_to_ints(str: String, sep: char) -> Vec<i32> {
+fn string_to_ints(str: String, sep: char) -> Vec<i32> {
     let parts = str.split(sep);
     let vec = parts.flat_map(|x| x.parse::<i32>()).collect::<Vec<i32>>();
     return vec;

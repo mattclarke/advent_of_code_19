@@ -1,7 +1,8 @@
-
-
-pub fn calculate(data: String) -> bool {
-    let numbers = data.chars().flat_map(|x| x.to_digit(10)).collect::<Vec<u32>>();
+fn calculate(data: String) -> bool {
+    let numbers = data
+        .chars()
+        .flat_map(|x| x.to_digit(10))
+        .collect::<Vec<u32>>();
     let mut prev: u32 = *numbers.first().unwrap();
     let mut equal_count = 0;
     let mut seen_double = false;
@@ -14,8 +15,7 @@ pub fn calculate(data: String) -> bool {
 
         if n == prev {
             equal_count += 1;
-        }
-        else {
+        } else {
             if equal_count == 1 {
                 seen_double = true;
             } else {
@@ -41,7 +41,6 @@ fn main() -> std::io::Result<()> {
     }
 
     println!("{}", count);
-    
     Ok(())
 }
 

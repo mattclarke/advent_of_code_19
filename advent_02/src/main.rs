@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-pub fn calculate(mut vec: Vec<usize>) -> Vec<usize> {
+fn calculate(mut vec: Vec<usize>) -> Vec<usize> {
     let mut index = 0;
     loop {
         if vec[index] == 1 {
@@ -25,7 +25,7 @@ pub fn calculate(mut vec: Vec<usize>) -> Vec<usize> {
     return vec;
 }
 
-pub fn string_to_ints(str: String, sep: char) -> Vec<usize> {
+fn string_to_ints(str: String, sep: char) -> Vec<usize> {
     let parts = str.split(sep);
     let vec = parts
         .flat_map(|x| x.parse::<usize>())

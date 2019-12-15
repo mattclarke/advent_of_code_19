@@ -9,9 +9,9 @@ fn get_positions_visited(moves: Vec<String>) -> HashMap<(i32, i32), i32> {
     let mut y_position = 0;
     let mut steps = 0;
     positions.insert((x_position, y_position), steps);
-    let null_op = |x :i32| x;
-    let increase = |x :i32| x + 1;
-    let decrease = |x :i32| x - 1;
+    let null_op = |x: i32| x;
+    let increase = |x: i32| x + 1;
+    let decrease = |x: i32| x - 1;
     let mut x_op: Box<dyn Fn((i32)) -> (i32)> = Box::new(null_op);
     let mut y_op: Box<dyn Fn((i32)) -> (i32)> = Box::new(null_op);
 
@@ -69,9 +69,9 @@ fn find_closest(first_codes: Vec<String>, second_codes: Vec<String>) -> (i32, i3
     let mut steps = 0;
     let mut least_dist: i32 = std::i32::MAX;
     let mut least_steps: i32 = std::i32::MAX;
-    let null_op = |x :i32| x;
-    let increase = |x :i32| x + 1;
-    let decrease = |x :i32| x - 1;
+    let null_op = |x: i32| x;
+    let increase = |x: i32| x + 1;
+    let decrease = |x: i32| x - 1;
     let mut x_op: Box<dyn Fn((i32)) -> (i32)> = Box::new(null_op);
     let mut y_op: Box<dyn Fn((i32)) -> (i32)> = Box::new(null_op);
 
@@ -98,8 +98,7 @@ fn find_closest(first_codes: Vec<String>, second_codes: Vec<String>) -> (i32, i3
             if first_set.contains_key(&(x_position, y_position)) {
                 let dist = x_position.abs() + y_position.abs();
                 least_dist = cmp::min(dist, least_dist);
-                least_steps =
-                    cmp::min(least_steps, first_set[&(x_position, y_position)] + steps);
+                least_steps = cmp::min(least_steps, first_set[&(x_position, y_position)] + steps);
             }
         }
     }
