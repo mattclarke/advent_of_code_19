@@ -1,167 +1,171 @@
-use std::cmp;
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 
-fn calculate_max(perms: &HashSet<Vec<i32>>, commands: &Vec<i32>) -> i32 {
-    let mut max_thrust: i32 = 0;
-    let mut cmds = commands.to_vec();
+fn get_modes(command: i64, number: i64) -> Vec<i64> {
+    let mut c: i64 = command / 100;
+    let mut modes: Vec<i64> = Vec::new();
 
-    for p in perms {
-        let ans_a = run_computer(&mut cmds, vec![p[0], 0]);
-        let ans_b = run_computer(&mut cmds, vec![p[1], ans_a.0]);
-        let ans_c = run_computer(&mut cmds, vec![p[2], ans_b.0]);
-        let ans_d = run_computer(&mut cmds, vec![p[3], ans_c.0]);
-        let ans_e = run_computer(&mut cmds, vec![p[4], ans_d.0]);
-        max_thrust = cmp::max(max_thrust, ans_e.0);
+    for _i in 0..number {
+        modes.push(c % 10);
+        c = c / 10;
     }
 
-    return max_thrust;
+    return modes;
 }
 
-fn calculate_max_feedback(perms: &HashSet<Vec<i32>>, commands: &Vec<i32>) -> i32 {
-    let mut max_thrust: i32 = 0;
+fn get_operands(commands: &Vec<i64>, modes: &Vec<i64>, index: usize, relative_base: i64, number: i64) -> Vec<i64> {
+    let mut operands: Vec<i64> = Vec::new();
+    let mut temp_index = index + 1;
 
-    for p in perms {
-        let mut a_state = commands.to_vec();
-        let mut b_state = commands.to_vec();
-        let mut c_state = commands.to_vec();
-        let mut d_state = commands.to_vec();
-        let mut e_state = commands.to_vec();
-
-        // First time through the loop preps the system
-        let mut ans_a = run_computer(&mut a_state, vec![p[0], 0]);
-        let mut ans_b = run_computer(&mut b_state, vec![p[1], ans_a.0]);
-        let mut ans_c = run_computer(&mut c_state, vec![p[2], ans_b.0]);
-        let mut ans_d = run_computer(&mut d_state, vec![p[3], ans_c.0]);
-        let mut ans_e = run_computer(&mut e_state, vec![p[4], ans_d.0]);
-
-        while ans_e.2 != 99 {
-            ans_a = run_computer_index(&mut a_state, vec![ans_e.0], ans_a.1);
-            ans_b = run_computer_index(&mut b_state, vec![ans_a.0], ans_b.1);
-            ans_c = run_computer_index(&mut c_state, vec![ans_b.0], ans_c.1);
-            ans_d = run_computer_index(&mut d_state, vec![ans_c.0], ans_d.1);
-            ans_e = run_computer_index(&mut e_state, vec![ans_d.0], ans_e.1);
+    for i in 0..number {
+        if modes[i as usize] == 0 {
+            // Position mode
+            operands.push(commands[commands[temp_index] as usize]);
+        } else if modes[i as usize] == 1 {
+            // Parameter mode
+            operands.push(commands[temp_index]);
+        } else if modes[i as usize] == 2 {
+            // Relative mode
+            let first = commands[(relative_base + commands[temp_index]) as usize];
+            operands.push(first);
         }
-
-        max_thrust = cmp::max(max_thrust, ans_e.0);
+        temp_index += 1;
     }
-
-    return max_thrust;
+    return operands;
 }
 
-fn run_computer(commands: &mut Vec<i32>, inputs: Vec<i32>) -> (i32, usize, i32) {
-    return run_computer_index(commands, inputs, 0);
+fn get_write_index(commands: &Vec<i64>, mode: &i64, index: usize, relative_base: i64) -> usize {
+    if *mode == 0 {
+        // Position mode
+        // println!("output = position {}", index);
+        return commands[index] as usize;
+    }
+    else if *mode == 1 {
+        // Parameter mode
+        // println!("output = parameter {}", index);
+        return commands[index] as usize;
+    }
+    else {
+        // Relative mode
+        return (relative_base + commands[index]) as usize;
+    }
 }
 
-fn run_computer_index(
-    commands: &mut Vec<i32>,
-    mut inputs: Vec<i32>,
-    start_index: usize,
-) -> (i32, usize, i32) {
-    let mut index = start_index;
-    let mut output = 0;
+fn get_jump_index(commands: &Vec<i64>, mode: &i64, index: usize, relative_base: i64) -> usize {
+    if *mode == 0 {
+        // Position mode
+        // println!("output = position {}", index);
+        return commands[commands[index] as usize] as usize;
+    }
+    else if *mode == 1 {
+        // // Parameter mode
+        // println!("output = parameter {}", index);
+        return commands[index] as usize;
+    }
+    else {
+        // Relative mode
+        return commands[(relative_base + commands[index]) as usize] as usize;
+    }
+}
+
+fn run_computer(commands: &mut Vec<i64>, mut inputs: Vec<i64>) -> Vec<i64> {
+    let mut index = 0;
+    let mut output: Vec<i64> = Vec::new();
+    let mut relative_base = 0;
 
     while commands[index] != 99 {
+        println!("index= {}, command = {}", index, commands[index]);
         let opcode = commands[index] % 100;
-        if opcode == 3 {
-            // 3 is different because it is a write
-            // no parameter modes apply
-            let first = commands[index + 1];
-            if inputs.len() == 0 {
-                // Part 2 - suspend
-                return (output, index, commands[index]);
-            }
-            commands[first as usize] = inputs[0];
+        if opcode == 1 {
+            // Addition
+            let modes = get_modes(commands[index], 3);
+            let operands = get_operands(commands, &modes, index, relative_base, 3);
+            let out_index = get_write_index(commands, &modes[2], index + 3, relative_base);
+            commands[out_index] = operands[0] + operands[1];
+            index += 4;
+        } else if opcode == 2 {
+            // Multiply
+            let modes = get_modes(commands[index], 3);
+            let operands = get_operands(commands, &modes, index, relative_base, 3);
+            let out_index = get_write_index(commands, &modes[2], index + 3, relative_base);
+            commands[out_index] = operands[0] * operands[1];
+            index += 4;
+        } else if opcode == 3 {
+            // Input
+            let modes = get_modes(commands[index], 1);
+            let out_index = get_write_index(commands, &modes[0], index + 1, relative_base);
+            commands[out_index] = inputs[0];
             inputs.remove(0);
             index += 2;
         } else if opcode == 4 {
-            let c: i32 = commands[index] / 100;
-            if c % 10 == 1 {
-                output = commands[index + 1];
-            } else {
-                let first = commands[index + 1];
-                output = commands[first as usize];
-            }
+            // Output
+            let modes = get_modes(commands[index], 1);
+            let out_index = get_jump_index(commands, &modes[0], index + 1, relative_base);
+            output.push(out_index as i64);
+            println!("OUTPUT {}", out_index);
             index += 2;
-        } else {
-            let mut c: i32 = commands[index] / 100;
-            let mut operands: Vec<i32> = Vec::new();
-            index += 1;
-
-            for _i in 0..2 {
-                if c % 10 == 1 {
-                    operands.push(commands[index])
-                } else {
-                    operands.push(commands[commands[index] as usize]);
-                }
-                c = c / 10;
-                index += 1;
+        } else if opcode == 5 {
+            // Jump-if-true
+            let modes = get_modes(commands[index], 2);
+            let operands = get_operands(commands, &modes, index, relative_base, 1);
+            let out_index = get_jump_index(commands, &modes[1], index + 2, relative_base);
+            if operands[0] != 0 {
+                index = out_index;
+            } else {
+                index += 3;
             }
-
-            let out_par = commands[index] as usize;
-
-            if opcode == 1 {
-                commands[out_par] = operands.iter().fold(0, |acc, x| acc + x);
-                index += 1;
-            } else if opcode == 2 {
-                commands[out_par] = operands.iter().fold(1, |acc, x| acc * x);
-                index += 1;
-            } else if opcode == 5 {
-                if operands[0] != 0 {
-                    index = operands[1] as usize;
-                }
-            } else if opcode == 6 {
-                if operands[0] == 0 {
-                    index = operands[1] as usize;
-                }
-            } else if opcode == 7 {
-                if operands[0] < operands[1] {
-                    commands[out_par] = 1;
-                } else {
-                    commands[out_par] = 0;
-                }
-                index += 1;
-            } else if opcode == 8 {
-                if operands[0] == operands[1] {
-                    commands[out_par] = 1;
-                } else {
-                    commands[out_par] = 0;
-                }
-                index += 1;
+        } else if opcode == 6 {
+            // Jump-if-false
+            let modes = get_modes(commands[index], 2);
+            let operands = get_operands(commands, &modes, index, relative_base, 1);
+            let out_index = get_jump_index(commands, &modes[1], index + 2, relative_base);
+            if operands[0] == 0 {
+                index = out_index;
+            } else {
+                index += 3;
             }
+        } else if opcode == 7 {
+            // Less than
+            let modes = get_modes(commands[index], 3);
+            let operands = get_operands(commands, &modes, index, relative_base, 2);
+            let out_index = get_write_index(commands, &modes[2], index + 3, relative_base);
+            if operands[0] < operands[1] {
+                commands[out_index] = 1;
+            } else {
+                commands[out_index] = 0;
+            }
+            index += 4;
+        } else if opcode == 8 {
+            // Equal
+            let modes = get_modes(commands[index], 3);
+            let operands = get_operands(commands, &modes, index, relative_base, 2);
+            let out_index = get_write_index(commands, &modes[2], index + 3, relative_base);
+            println!("rel {}", relative_base);
+            println!("{} {} {}", commands[index+1], commands[index+2], commands[index+3]);
+            println!("modes = {:?}", modes);
+            println!("operands = {:?}", operands);
+            println!("out index = {}", out_index);
+            if operands[0] == operands[1] {
+                commands[out_index] = 1;
+            } else {
+                commands[out_index] = 0;
+            }
+            index += 4;
+        } else if opcode == 9 {
+            // Adjust relative_base
+            let modes = get_modes(commands[index], 1);
+            let operands = get_operands(commands, &modes, index, relative_base, 1);
+            relative_base += operands[0];
+            index += 2;
         }
     }
 
-    return (output, 0, commands[index]);
+    return output;
 }
 
-fn recursive_combo(input: &Vec<i32>, builder: &mut Vec<i32>, results: &mut HashSet<Vec<i32>>) {
-    if builder.len() == input.len() {
-        results.insert(builder.to_vec());
-        return;
-    }
-
-    for i in input {
-        if !builder.contains(&i) {
-            builder.push(*i);
-            recursive_combo(input, builder, results);
-            builder.pop();
-        }
-    }
-}
-
-fn get_perms(input: &Vec<i32>) -> HashSet<Vec<i32>> {
-    let mut results: HashSet<Vec<i32>> = HashSet::new();
-    let mut builder: Vec<i32> = Vec::new();
-    recursive_combo(input, &mut builder, &mut results);
-
-    return results;
-}
-
-fn string_to_ints(str: String, sep: char) -> Vec<i32> {
+fn string_to_ints(str: String, sep: char) -> Vec<i64> {
     let parts = str.split(sep);
-    let vec = parts.flat_map(|x| x.parse::<i32>()).collect::<Vec<i32>>();
+    let vec = parts.flat_map(|x| x.parse::<i64>()).collect::<Vec<i64>>();
     return vec;
 }
 
@@ -176,24 +180,36 @@ fn main() -> std::io::Result<()> {
     let contents = read_file();
     let orig_codes = string_to_ints(contents, ',');
 
-    // Part 1 = 116680
-    let perms = get_perms(&vec![0, 1, 2, 3, 4]);
-    println!("Result 1 = {}", calculate_max(&perms, &orig_codes));
+    // Part 1 = 2594708277
+    // let mut inputs: Vec<i64> = Vec::new();
+    // inputs.push(1);
 
-    // Part 2 = 89603079
-    let perms = get_perms(&vec![5, 6, 7, 8, 9]);
-    println!("Result 2 = {}", calculate_max_feedback(&perms, &orig_codes));
+    // let mut memory = vec![0; orig_codes.len() * 100];
+    // for i in 0..orig_codes.len() {
+    //     memory[i] = orig_codes[i];
+    // }
+
+    // let result = run_computer(&mut memory, inputs);
+    // println!("Part 1 = {:?}", result);
+
+    // Part 2 = 87721
+    let mut inputs: Vec<i64> = Vec::new();
+    inputs.push(2);
+
+    let mut memory = vec![0; orig_codes.len() * 100];
+    for i in 0..orig_codes.len() {
+        memory[i] = orig_codes[i];
+    }
+
+    let result = run_computer(&mut memory, inputs);
+    println!("Part 2 = {:?}", result);
 
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::calculate_max;
-    use crate::calculate_max_feedback;
-    use crate::get_perms;
     use crate::run_computer;
-    use crate::run_computer_index;
     use crate::string_to_ints;
 
     #[test]
@@ -205,124 +221,399 @@ mod tests {
     }
 
     #[test]
-    fn can_generate_all_combos_1() {
-        let phase_settings = vec![0, 1, 2];
-        let result = get_perms(&phase_settings);
-        println!("{:?}", result);
-        assert_eq!(result.len(), 6);
+    fn it_works_for_day_2_example_1() {
+        let mut cmds = vec![1, 0, 0, 0, 99];
+        run_computer(&mut cmds, Vec::new());
+
+        assert_eq!(cmds, [2, 0, 0, 0, 99]);
     }
 
     #[test]
-    fn can_generate_all_combos_2() {
-        let phase_settings = vec![0, 1, 2, 3, 4];
-        let result = get_perms(&phase_settings);
-        println!("{:?}", result);
-        assert_eq!(result.len(), 120);
+    fn it_works_for_day_2_example_2() {
+        let mut cmds = vec![2, 3, 0, 3, 99];
+        run_computer(&mut cmds, Vec::new());
+
+        assert_eq!(cmds, [2, 3, 0, 6, 99]);
     }
 
     #[test]
-    fn it_works_for_example_1_hard_coded() {
-        let mut input = vec![
-            3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0,
+    fn it_works_for_day_2_example_3() {
+        let mut cmds = vec![2, 4, 4, 5, 99, 0];
+        run_computer(&mut cmds, Vec::new());
+
+        assert_eq!(cmds, [2, 4, 4, 5, 99, 9801]);
+    }
+
+    #[test]
+    fn it_works_for_day_2_example_4() {
+        let mut cmds = vec![1, 1, 1, 4, 99, 5, 6, 0, 99];
+        run_computer(&mut cmds, Vec::new());
+
+        assert_eq!(cmds, [30, 1, 1, 4, 2, 5, 6, 0, 99]);
+    }
+
+    #[test]
+    fn it_works_for_day_5_example_1() {
+        let mut cmds = vec![3, 0, 4, 0, 99];
+        let inputs = vec![6];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result[0], 6);
+    }
+
+    #[test]
+    fn it_works_for_day_5_example_2() {
+        let mut cmds = vec![1002, 6, 3, 6, 4, 6, 33];
+        let inputs = vec![99];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result[0], 99);
+    }
+
+    #[test]
+    fn it_works_for_day_5_example_3() {
+        let mut cmds = vec![1101, 100, -1, 6, 4, 6, 0];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result[0], 99);
+    }
+
+    #[test]
+    fn it_works_for_no_leading_value() {
+        let mut cmds = vec![101, 93, 3, 6, 4, 6, 0];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result[0], 99);
+    }
+
+    #[test]
+    fn it_jumps_on_a_five_if_true() {
+        let mut cmds = vec![4, 1, 1105, 1, 7, 4, 2, 99];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn no_jump_on_a_five_if_false() {
+        let mut cmds = vec![4, 1, 1105, 0, 7, 4, 2, 99];
+
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1, 1105]);
+    }
+
+    #[test]
+    fn it_jumps_on_a_six_if_false() {
+        let mut cmds = vec![4, 1, 1106, 0, 7, 4, 2, 99];
+
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn no_jump_on_a_six_if_true() {
+        let mut cmds = vec![4, 1, 1106, 1, 7, 4, 2, 99];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1, 1106]);
+    }
+
+    #[test]
+    fn seven_if_true_stores_one() {
+        let mut cmds = vec![1107, 1, 2, 5, 4, 5, 99];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn seven_if_false_stores_zero() {
+        let mut cmds = vec![1107, 2, 1, 5, 4, 5, 99];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1107]);
+    }
+
+    #[test]
+    fn eight_if_true_stores_one() {
+        let mut cmds = vec![1108, 1, 1, 5, 4, 5, 99];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn eight_if_false_stores_zero() {
+        let mut cmds = vec![1108, 2, 1, 5, 4, 5, 99];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1108]);
+    }
+
+    #[test]
+    fn it_works_for_example_4_a() {
+        let mut cmds = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
+        let inputs = vec![8];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn it_works_for_example_4_b() {
+        let mut cmds = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
+        let inputs = vec![123];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![0]);
+    }
+
+    #[test]
+    fn it_works_for_example_5_a() {
+        let mut cmds = vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8];
+        let inputs = vec![7];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn it_works_for_example_5_b() {
+        let mut cmds = vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8];
+        let inputs = vec![123];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![0]);
+    }
+
+    #[test]
+    fn it_works_for_example_6_a() {
+        let mut cmds = vec![3, 3, 1108, -1, 8, 3, 4, 3, 99];
+        let inputs = vec![8];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn it_works_for_example_6_b() {
+        let mut cmds = vec![3, 3, 1108, -1, 8, 3, 4, 3, 99];
+        let inputs = vec![123];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![0]);
+    }
+
+    #[test]
+    fn it_works_for_example_7_a() {
+        let mut cmds = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
+        let inputs = vec![7];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn it_works_for_example_7_b() {
+        let mut cmds = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
+        let inputs = vec![123];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![0]);
+    }
+
+    #[test]
+    fn it_works_for_example_8_a() {
+        let mut cmds = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![0]);
+    }
+
+    #[test]
+    fn it_works_for_example_8_b() {
+        let mut cmds = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
+        let inputs = vec![123];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn it_works_for_example_9_a() {
+        let mut cmds = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![0]);
+    }
+
+    #[test]
+    fn it_works_for_example_9_b() {
+        let mut cmds = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
+        let inputs = vec![123];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn it_works_for_example_10_a() {
+        let mut cmds = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
+        let inputs = vec![0];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![0]);
+    }
+
+    #[test]
+    fn it_works_for_example_10_b() {
+        let mut cmds = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
+        let inputs = vec![123];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1]);
+    }
+
+    #[test]
+    fn it_works_for_example_11_a() {
+        let mut cmds = vec![
+            3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31, 1106, 0, 36, 98, 0,
+            0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104, 999, 1105, 1, 46, 1101, 1000, 1, 20, 4,
+            20, 1105, 1, 46, 98, 99,
+        ];
+        let inputs = vec![7];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![999]);
+    }
+
+    #[test]
+    fn it_works_for_example_11_b() {
+        let mut cmds = vec![
+            3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31, 1106, 0, 36, 98, 0,
+            0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104, 999, 1105, 1, 46, 1101, 1000, 1, 20, 4,
+            20, 1105, 1, 46, 98, 99,
+        ];
+        let inputs = vec![8];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1000]);
+    }
+
+    #[test]
+    fn it_works_for_example_11_c() {
+        let mut cmds = vec![
+            3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31, 1106, 0, 36, 98, 0,
+            0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104, 999, 1105, 1, 46, 1101, 1000, 1, 20, 4,
+            20, 1105, 1, 46, 98, 99,
+        ];
+        let inputs = vec![9];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![1001]);
+    }
+
+    #[test]
+    fn it_works_for_simple_relative_example_1() {
+        let mut cmds = vec![
+            22201, 7, 8, 9, 4, 9, 99, 100, 101, 0
+        ];
+        let inputs = vec![];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![201]);
+    }
+
+    #[test]
+    fn it_works_for_simple_relative_example_2() {
+        let mut cmds = vec![
+            22201, 7, 8, 9, 204, 9, 99, 100, 101, 0
+        ];
+        let inputs = vec![];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![201]);
+    }
+
+    #[test]
+    fn it_works_for_simple_relative_example_3() {
+        let mut cmds = vec![
+            109, 0, 22201, 9, 10, 11, 204, 11, 99, 100, 101, 0
+        ];
+        let inputs = vec![];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![201]);
+    }
+
+    #[test]
+    fn it_works_for_simple_relative_example_4() {
+        let mut cmds = vec![
+            109, 2, 22201, 7, 8, 9, 204, 9, 99, 100, 101, 0
+        ];
+        let inputs = vec![];
+        let result = run_computer(&mut cmds, inputs);
+
+        assert_eq!(result, vec![201]);
+    }
+
+    #[test]
+    fn it_works_for_day_9_example_1() {
+        let original = vec![
+            109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
         ];
 
-        let ans_a = run_computer(&mut input, vec![4, 0]);
-        let ans_b = run_computer(&mut input, vec![3, ans_a.0]);
-        let ans_c = run_computer(&mut input, vec![2, ans_b.0]);
-        let ans_d = run_computer(&mut input, vec![1, ans_c.0]);
-        let ans_e = run_computer(&mut input, vec![0, ans_d.0]);
-
-        assert_eq!(ans_e.0, 43210);
-    }
-
-    #[test]
-    fn it_works_for_example_1() {
-        let mut input = vec![
-            3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0,
-        ];
-        let phase_settings = vec![0, 1, 2, 3, 4];
-        let perms = get_perms(&phase_settings);
-
-        assert_eq!(calculate_max(&perms, &mut input), 43210);
-    }
-
-    #[test]
-    fn it_works_for_example_2() {
-        let mut input = vec![
-            3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23, 23, 4, 23,
-            99, 0, 0,
-        ];
-        let phase_settings = vec![0, 1, 2, 3, 4];
-        let perms = get_perms(&phase_settings);
-
-        assert_eq!(calculate_max(&perms, &mut input), 54321);
-    }
-
-    #[test]
-    fn it_works_for_example_3() {
-        let mut input = vec![
-            3, 31, 3, 32, 1002, 32, 10, 32, 1001, 31, -2, 31, 1007, 31, 0, 33, 1002, 33, 7, 33, 1,
-            33, 31, 31, 1, 32, 31, 31, 4, 31, 99, 0, 0, 0,
-        ];
-        let phase_settings = vec![0, 1, 2, 3, 4];
-        let perms = get_perms(&phase_settings);
-
-        assert_eq!(calculate_max(&perms, &mut input), 65210);
-    }
-
-    #[test]
-    fn it_works_for_part2_example_1_hard_coded() {
-        let input = vec![
-            3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28, -1,
-            28, 1005, 28, 6, 99, 0, 0, 5,
-        ];
-        // let phase_settings = vec![5, 6, 7, 8, 9];
-        // let perms = get_perms(&phase_settings);
-
-        let mut a_state = input.to_vec();
-        let mut ans_a = run_computer(&mut a_state, vec![9, 0]);
-        let mut b_state = input.to_vec();
-        let mut ans_b = run_computer(&mut b_state, vec![8, ans_a.0]);
-        let mut c_state = input.to_vec();
-        let mut ans_c = run_computer(&mut c_state, vec![7, ans_b.0]);
-        let mut d_state = input.to_vec();
-        let mut ans_d = run_computer(&mut d_state, vec![6, ans_c.0]);
-        let mut e_state = input.to_vec();
-        let mut ans_e = run_computer(&mut e_state, vec![5, ans_d.0]);
-
-        while ans_e.2 != 99 {
-            ans_a = run_computer_index(&mut a_state, vec![ans_e.0], ans_a.1);
-            ans_b = run_computer_index(&mut b_state, vec![ans_a.0], ans_b.1);
-            ans_c = run_computer_index(&mut c_state, vec![ans_b.0], ans_c.1);
-            ans_d = run_computer_index(&mut d_state, vec![ans_c.0], ans_d.1);
-            ans_e = run_computer_index(&mut e_state, vec![ans_d.0], ans_e.1);
+        let mut cmds = vec![0; 300];
+        for i in 0..original.len() {
+            cmds[i] = original[i];
         }
 
-        assert_eq!(ans_e.0, 139629729);
+        let result = run_computer(&mut cmds, Vec::new());
+
+        assert_eq!(result, original);
     }
 
     #[test]
-    fn it_works_for_part2_example_1() {
-        let input = vec![
-            3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28, -1,
-            28, 1005, 28, 6, 99, 0, 0, 5,
-        ];
-        let phase_settings = vec![5, 6, 7, 8, 9];
-        let perms = get_perms(&phase_settings);
+    fn it_works_for_day_9_example_2() {
+        let original = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
 
-        assert_eq!(calculate_max_feedback(&perms, &input), 139629729);
+        let mut cmds = vec![0; 100];
+        for i in 0..original.len() {
+            cmds[i] = original[i];
+        }
+
+        let result = run_computer(&mut cmds, Vec::new());
+
+        // Must be 16 digits
+        assert!(result[0] > 1000000000000000);
+        assert!(result[0] < 10000000000000000)
     }
 
     #[test]
-    fn it_works_for_part2_example_2() {
-        let input = vec![
-            3, 52, 1001, 52, -5, 52, 3, 53, 1, 52, 56, 54, 1007, 54, 5, 55, 1005, 55, 26, 1001, 54,
-            -5, 54, 1105, 1, 12, 1, 53, 54, 53, 1008, 54, 0, 55, 1001, 55, 1, 55, 2, 53, 55, 53, 4,
-            53, 1001, 56, -1, 56, 1005, 56, 6, 99, 0, 0, 0, 0, 10,
-        ];
-        let phase_settings = vec![5, 6, 7, 8, 9];
-        let perms = get_perms(&phase_settings);
+    fn it_works_for_day_9_example_3() {
+        let original = vec![104, 1125899906842624, 99];
 
-        assert_eq!(calculate_max_feedback(&perms, &input), 18216);
+        let mut cmds = vec![0; 1000];
+        for i in 0..original.len() {
+            cmds[i] = original[i];
+        }
+
+        let result = run_computer(&mut cmds, Vec::new());
+
+        assert_eq!(result[0], original[1]);
     }
 }
