@@ -140,11 +140,6 @@ fn run_computer(commands: &mut Vec<i64>, mut inputs: Vec<i64>) -> Vec<i64> {
             let modes = get_modes(commands[index], 3);
             let operands = get_operands(commands, &modes, index, relative_base, 2);
             let out_index = get_write_index(commands, &modes[2], index + 3, relative_base);
-            println!("rel {}", relative_base);
-            println!("{} {} {}", commands[index+1], commands[index+2], commands[index+3]);
-            println!("modes = {:?}", modes);
-            println!("operands = {:?}", operands);
-            println!("out index = {}", out_index);
             if operands[0] == operands[1] {
                 commands[out_index] = 1;
             } else {
