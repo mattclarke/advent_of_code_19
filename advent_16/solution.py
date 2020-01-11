@@ -1,21 +1,10 @@
 with open("input_data.txt") as f:
     input_data = f.read()
 
-input_data = "03036732577212944063491565474664"
+# input_data = "03036732577212944063491565474664"
 
 ORIG_DATA = [int(c) for c in input_data]
 BASE_PATTERN = [0, 1, 0, -1]
-
-
-def generate_base(times=1):
-    num = 0
-    offset = 1
-    while True:
-        for i in range(times - offset):
-            yield BASE_PATTERN[num]
-        offset = 0
-        num += 1
-        num %= len(BASE_PATTERN)
 
 
 def part_1():
@@ -23,43 +12,62 @@ def part_1():
 
     for _ in range(100):
         new_data = []
+        start_index = 0
+        index = 0
+        length = 1
+        base_ = 1
 
-        for i, _ in enumerate(data):
+        for _ in data:
             accum = 0
-            base_gen = generate_base(i + 1)
 
-            for i in range(len(data)):
-                accum += data[i] * next(base_gen)
+            while index < len(data):
+                max_index = index + length if index + length < len(data) else len(data)
+                accum += sum(data[index:max_index]) * base_
+                base_ *= -1
+                index += length * 2
             new_data.append(abs(accum) % 10)
-
+            length += 1
+            start_index += 1
+            index = start_index
         data = new_data
 
     print("".join([str(x) for x in data[0:8]]))
 
 
 # Part 1 = 53296082
-# part_1()
+part_1()
 
 data = ORIG_DATA[:]
 
 print(len(data))
+
+def part_2():
+    data = ORIG_DATA[:] * 10000
+
+    for _ in range(100):
+        new_data = []
+        start_index = 0
+        index = 0
+        length = 1
+        base_ = 1
+
+        for _ in data:
+            accum = 0
+
+            while index < len(data):
+                max_index = index + length if index + length < len(data) else len(data)
+                accum += sum(data[index:max_index]) * base_
+                base_ *= -1
+                index += length * 2
+            new_data.append(abs(accum) % 10)
+            length += 1
+            start_index += 1
+            index = start_index
+        data = new_data
+        print(data[0:32])
+
+    print("".join([str(x) for x in data[0:8]]))
+
+
 offset = int(input_data[0:8])
-for _ in range(1):
-    new_data = []
-
-    for i, _ in enumerate(data):
-        accum = 0
-        base_gen = generate_base(i + 1)
-        bases = []
-
-        for i in range(len(data)):
-            base = next(base_gen)
-            bases.append(base)
-            accum += data[i] * base
-        accum = abs(accum)
-        new_data.append(accum % 10)
-        print(bases)
-
-    data = new_data
-
-print(data)
+part_2()
