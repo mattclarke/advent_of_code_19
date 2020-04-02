@@ -3,6 +3,17 @@ from collections import deque
 with open("input_data.txt") as f:
     input_data = f.read()
 
+# input_data = """
+# #################
+# #i.G..c...e..H.p#
+# ########.########
+# #j.A..b...f..D.o#
+# ########@########
+# #k.E..a...g..B.n#
+# ########.########
+# #l.F..d...h..C.m#
+# #################"""
+
 ORIG_DATA = []
 for row in input_data.split():
     print(row)
@@ -27,7 +38,7 @@ for y in range(len(ORIG_DATA)):
     for x in range(len(ORIG_DATA[0])):
         if ORIG_DATA[y][x] != "#":
             if ORIG_DATA[y][x] == "@":
-                START = (x, y)
+                START = (y, x)
                 n = Node("@")
             elif ORIG_DATA[y][x].isalpha():
                 n = Node(ORIG_DATA[y][x])
@@ -123,3 +134,59 @@ while visit_stack:
             break
     for k in current.links:
         visit_stack.append((k, dist + 1, new_keys))
+
+# Second attempt
+# Build a graph
+# GRAPH = {}
+# seen = set()
+#
+# def _recurse(current, links, dist=0):
+#     if current in seen:
+#         return
+#     seen.add(current)
+#     for n in current.links:
+#         node = NODES[n]
+#         if node.content is None:
+#             _recurse(node, links, dist + 1)
+#         elif node.content.isalpha() or node.content == "@":
+#             if node not in seen:
+#                 links.add((node.content, dist + 1))
+#
+#
+# for n, v in NODES.items():
+#     if v.content:
+#         seen.clear()
+#         links = set()
+#         _recurse(v, links)
+#         GRAPH[v.content] = links
+#
+# visit_stack = [("@", 0, set())]
+# seen = set()
+# seen_dist = {}
+# len_keys = 0
+#
+# while visit_stack:
+#     node, dist, keys = visit_stack[0]
+#     visit_stack.pop(0)
+#     unique = (node, tuple(sorted(keys)))
+#     if unique not in seen:
+#         seen.add(unique)
+#         seen_dist[unique] = dist
+#     elif dist < seen_dist[unique]:
+#         seen_dist[unique] = dist
+#     else:
+#         continue
+#     if node.isupper() and node.lower() not in keys:
+#         continue
+#     new_keys = set(keys)
+#     if node.islower():
+#         new_keys.add(node)
+#         if len(new_keys) > len_keys:
+#             len_keys = len(new_keys)
+#             print(new_keys)
+#         if len(new_keys) == len(KEYS):
+#             print(dist, node)
+#             continue
+#     for k, d in GRAPH[node]:
+#         visit_stack.append((k, dist + d, new_keys))
+#
