@@ -1,6 +1,4 @@
 use std::char;
-use std::cmp;
-use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io::prelude::*;
@@ -202,7 +200,7 @@ fn part_1(orig_codes: &Vec<i64>) {
     let mut bases: Vec<i64> = vec![];
     let mut queues: Vec<VecDeque<(i64, i64)>> = vec![];
 
-    for i in 0..50 {
+    for _i in 0..50 {
         queues.push(VecDeque::new());
     }
 
@@ -212,7 +210,7 @@ fn part_1(orig_codes: &Vec<i64>) {
         let mut inputs: Vec<i64> = vec![i];
         let mut index = 0;
         let mut relative_base = 0;
-        let mut output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+        let output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
         index = output.1;
         relative_base = output.2;
 
@@ -226,36 +224,18 @@ fn part_1(orig_codes: &Vec<i64>) {
             let mut memory = memories[i as usize].to_vec();
             let mut index = indexs[i as usize];
             let mut relative_base = bases[i as usize];
+            let mut inputs: Vec<i64> = vec![-1];
+            let mut output: (Vec<i64>, i64, i64);
 
             if queues[i as usize].len() == 0 {
-                let mut inputs: Vec<i64> = vec![-1];
-
-                let mut output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+                output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
                 index = output.1;
                 relative_base = output.2;
-
-                if output.0.len() == 3 {
-                    let addr =  output.0[0];
-                    let x = output.0[1];
-                    let y = output.0[2];
-
-                    if addr == 255 {
-                        println!("Part 1 = {}", y);
-                        return;
-                    }
-
-                    queues[addr as usize].push_back((x, y));
-                }
-
-                memories[i as usize] = memory.to_vec();
-                indexs[i as usize] = index;
-                bases[i as usize] = relative_base;
-
             } else {
                 let msg = queues[i as usize].pop_front().unwrap();
-                let mut inputs: Vec<i64> = vec![msg.0];
+                inputs  = vec![msg.0];
 
-                let mut output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+                output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
                 index = output.1;
                 relative_base = output.2;
 
@@ -263,41 +243,117 @@ fn part_1(orig_codes: &Vec<i64>) {
                 output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
                 index = output.1;
                 relative_base = output.2;
+            }
 
-                if output.0.len() == 3 {
-                    let addr =  output.0[0];
-                    let x = output.0[1];
-                    let y = output.0[2];
+            if output.0.len() == 3 {
+                let addr =  output.0[0];
+                let x = output.0[1];
+                let y = output.0[2];
 
-                    if addr == 255 {
-                        println!("Part 1 = {}", y);
-                        return;
-                    }
-
-                    queues[addr as usize].push_back((x, y));
+                if addr == 255 {
+                    println!("Part 1 = {}", y);
+                    return;
                 }
 
-                memories[i as usize] = memory.to_vec();
-                indexs[i as usize] = index;
-                bases[i as usize] = relative_base;
+                queues[addr as usize].push_back((x, y));
             }
+
+            memories[i as usize] = memory.to_vec();
+            indexs[i as usize] = index;
+            bases[i as usize] = relative_base;
         }
-
-
     }
-
 }
 
 
 fn part_2(orig_codes: &Vec<i64>) {
-    let mut memory = orig_codes.to_vec();
-    let mut inputs: Vec<i64> = vec![];
-    let mut index = 0;
-    let mut relative_base = 0;
+    let mut memories: Vec<Vec<i64>> = vec![];
+    let mut indexes: Vec<i64> = vec![];
+    let mut bases: Vec<i64> = vec![];
+    let mut queues: Vec<VecDeque<(i64, i64)>> = vec![];
+    let mut states: Vec<bool> = Vec::new();
+    let mut nat: (i64, i64) = (-1, -1);
+    let mut old_nat = (-1, -1);
 
-    // Get input prompt
-    let mut output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+    for _i in 0..50 {
+        queues.push(VecDeque::new());
+        states.push(false);
+    }
 
+    // Set up the individual computers
+    for i in 0..50 {
+        let mut memory = orig_codes.to_vec();
+        let mut inputs: Vec<i64> = vec![i];
+        let mut index = 0;
+        let mut relative_base = 0;
+        let output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+        index = output.1;
+        relative_base = output.2;
+
+        memories.push(memory.to_vec());
+        indexes.push(index);
+        bases.push(relative_base);
+    }
+
+    loop {
+        // Check NAT
+        if !states.contains(&false) && nat.0 != -1 {
+            println!("IDLE!");
+
+            if nat.1  == old_nat.1{
+                println!("Part 2 = {}", nat.1);
+                return;
+            }
+
+            queues[0].push_back(nat);
+            old_nat = nat;
+        }
+
+        for i in 0..50 {
+            let mut memory = memories[i as usize].to_vec();
+            let mut index = indexes[i as usize];
+            let mut relative_base = bases[i as usize];
+            let mut inputs: Vec<i64> = vec![-1];
+            let mut output: (Vec<i64>, i64, i64);
+
+            if queues[i as usize].len() == 0 {
+                states[i] = true;
+                output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+                index = output.1;
+                relative_base = output.2;
+            } else {
+                states[i] = false;
+                let msg = queues[i as usize].pop_front().unwrap();
+                inputs  = vec![msg.0];
+
+                output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+                index = output.1;
+                relative_base = output.2;
+
+                inputs.push(msg.1);
+                output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+                index = output.1;
+                relative_base = output.2;
+            }
+
+            if output.0.len() == 3 {
+                let addr =  output.0[0];
+                let x = output.0[1];
+                let y = output.0[2];
+
+                if addr == 255 {
+                    nat = (x, y);
+                }
+                else {
+                    queues[addr as usize].push_back((x, y));
+                }
+            }
+
+            memories[i as usize] = memory.to_vec();
+            indexes[i as usize] = index;
+            bases[i as usize] = relative_base;
+        }
+    }
 }
 
 fn main() -> std::io::Result<()> {
@@ -309,11 +365,11 @@ fn main() -> std::io::Result<()> {
         memory[i] = orig_codes[i];
     }
 
-    // Part 1 = 19361850
+    // Part 1 = 23815
     part_1(&memory);
 
-    // Part 2 = 15231022
-    // part_2(&memory);
+    // Part 2 = 16666
+    part_2(&memory);
 
     Ok(())
 }
