@@ -1,6 +1,7 @@
 use std::char;
 use std::cmp;
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -119,10 +120,10 @@ fn run_computer_index(
                 get_jump_index(commands, &modes[0], (index + 1) as usize, relative_base);
             output.push(out_index as i64);
             index += 2;
-            // if output.len() == 3 {
-            //     // println!("Output = {:?}", output);
-            //     return (output, index, relative_base);
-            // }
+            if output.len() == 3 {
+                // println!("Output = {:?}", output);
+                return (output, index, relative_base);
+            }
         } else if opcode == 5 {
             // Jump-if-true
             let modes = get_modes(commands[index as usize], 2);
@@ -194,58 +195,97 @@ fn read_file() -> String {
     return contents;
 }
 
-fn print_response(output: Vec<i64>) {
-    println!("===============");
-    for i in output {
-        if i <= std::u8::MAX as i64 {
-            let c: u8 = i as u8;
-            print!("{}", c as char);
-        } else {
-            println!("Damage = {}", i);
-        }
-    }
-    println!("===============");
-}
-
-fn append_command(inputs: &mut Vec<i64>, command: &String) {
-    for b in command.as_bytes() {
-        inputs.push(*b as i64);
-    }
-    inputs.push(10);
-}
 
 fn part_1(orig_codes: &Vec<i64>) {
-    let mut memory = orig_codes.to_vec();
-    let mut inputs: Vec<i64> = vec![];
-    let mut index = 0;
-    let mut relative_base = 0;
+    let mut memories: Vec<Vec<i64>> = vec![];
+    let mut indexs: Vec<i64> = vec![];
+    let mut bases: Vec<i64> = vec![];
+    let mut queues: Vec<VecDeque<(i64, i64)>> = vec![];
 
-    // Get input prompt
-    let mut output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
-    index = output.1;
-    relative_base = output.2;
-    print_response(output.0);
+    for i in 0..50 {
+        queues.push(VecDeque::new());
+    }
 
-    // See if there are any holes before D
-    // See if A is a hole then T = 1
-    append_command(&mut inputs, &String::from("NOT A T"));
-    // See if B is a hole then J = 1
-    append_command(&mut inputs, &String::from("NOT B J"));
-    // If either or both are holes then J = 1
-    append_command(&mut inputs, &String::from("OR T J"));
-    // See if C is a hole then T = 1
-    append_command(&mut inputs, &String::from("NOT C T"));
-    // Compare with AB if hole then J = 1
-    append_command(&mut inputs, &String::from("OR T J"));
-    // Is D safe?
-    append_command(&mut inputs, &String::from("AND D J"));
+    // Set up the individual computers
+    for i in 0..50 {
+        let mut memory = orig_codes.to_vec();
+        let mut inputs: Vec<i64> = vec![i];
+        let mut index = 0;
+        let mut relative_base = 0;
+        let mut output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+        index = output.1;
+        relative_base = output.2;
 
-    append_command(&mut inputs, &String::from("WALK"));
+        memories.push(memory.to_vec());
+        indexs.push(index);
+        bases.push(relative_base);
+    }
 
-    output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
-    index = output.1;
-    relative_base = output.2;
-    print_response(output.0);
+    loop {
+        for i in 0..50 {
+            let mut memory = memories[i as usize].to_vec();
+            let mut index = indexs[i as usize];
+            let mut relative_base = bases[i as usize];
+
+            if queues[i as usize].len() == 0 {
+                let mut inputs: Vec<i64> = vec![-1];
+
+                let mut output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+                index = output.1;
+                relative_base = output.2;
+
+                if output.0.len() == 3 {
+                    let addr =  output.0[0];
+                    let x = output.0[1];
+                    let y = output.0[2];
+
+                    if addr == 255 {
+                        println!("Part 1 = {}", y);
+                        return;
+                    }
+
+                    queues[addr as usize].push_back((x, y));
+                }
+
+                memories[i as usize] = memory.to_vec();
+                indexs[i as usize] = index;
+                bases[i as usize] = relative_base;
+
+            } else {
+                let msg = queues[i as usize].pop_front().unwrap();
+                let mut inputs: Vec<i64> = vec![msg.0];
+
+                let mut output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+                index = output.1;
+                relative_base = output.2;
+
+                inputs.push(msg.1);
+                output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
+                index = output.1;
+                relative_base = output.2;
+
+                if output.0.len() == 3 {
+                    let addr =  output.0[0];
+                    let x = output.0[1];
+                    let y = output.0[2];
+
+                    if addr == 255 {
+                        println!("Part 1 = {}", y);
+                        return;
+                    }
+
+                    queues[addr as usize].push_back((x, y));
+                }
+
+                memories[i as usize] = memory.to_vec();
+                indexs[i as usize] = index;
+                bases[i as usize] = relative_base;
+            }
+        }
+
+
+    }
+
 }
 
 
@@ -257,39 +297,7 @@ fn part_2(orig_codes: &Vec<i64>) {
 
     // Get input prompt
     let mut output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
-    index = output.1;
-    relative_base = output.2;
-    print_response(output.0);
 
-    // Need to handle #####.#.#...#####
-    //                  @ABCDEFGHI
-    // Current code jumps to first island
-
-    // See if there are any holes before D
-    // See if A is a hole then T = 1
-    append_command(&mut inputs, &String::from("NOT A T"));
-    // See if B is a hole then J = 1
-    append_command(&mut inputs, &String::from("NOT B J"));
-    // If either or both are holes then J = 1
-    append_command(&mut inputs, &String::from("OR T J"));
-    // See if C is a hole then T = 1
-    append_command(&mut inputs, &String::from("NOT C T"));
-    // Compare with AB if hole then J = 1
-    append_command(&mut inputs, &String::from("OR T J"));
-    // Is D safe?
-    append_command(&mut inputs, &String::from("AND D J"));
-    // Jump only if one of H and E are also safe
-    append_command(&mut inputs, &String::from("NOT H T"));
-    append_command(&mut inputs, &String::from("NOT T T"));
-    append_command(&mut inputs, &String::from("OR E T"));
-    append_command(&mut inputs, &String::from("AND T J"));
-
-    append_command(&mut inputs, &String::from("RUN"));
-
-    output = run_computer_index(&mut memory, &mut inputs, index, relative_base);
-    index = output.1;
-    relative_base = output.2;
-    print_response(output.0);
 }
 
 fn main() -> std::io::Result<()> {
@@ -305,7 +313,7 @@ fn main() -> std::io::Result<()> {
     part_1(&memory);
 
     // Part 2 = 15231022
-    part_2(&memory);
+    // part_2(&memory);
 
     Ok(())
 }
