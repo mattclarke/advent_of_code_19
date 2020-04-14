@@ -218,7 +218,7 @@ def breadth_first_search(root):
             dy, dx = y+Y[i], x+X[i]
             if ORIG_DATA[dy][dx] != '#':
                 QUEUE.append((dy, dx, dist+1, doors+(ORIG_DATA[dy][dx].lower(),) if ORIG_DATA[dy][dx].isupper() else doors))
-    # gives a dict of keys reachable versus their distance away and the keys needed to get there
+    # Gives a dict of keys reachable versus their distance away and the keys needed to get there
     return K
 
 

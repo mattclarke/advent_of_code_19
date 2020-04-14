@@ -21,6 +21,7 @@ for l in lines:
 
 TOTAL_ORE = 1_000_000_000_000  # For part 2
 
+
 def create_fuel(continous):
     total_ore_used = 0
     fuel_produced = 0

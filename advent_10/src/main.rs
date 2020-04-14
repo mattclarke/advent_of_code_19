@@ -383,7 +383,7 @@ fn main() -> std::io::Result<()> {
     let result1 = find_max(&filled_in);
     println!("Part 1 = {:?}", result1);
 
-    // Part 2
+    // Part 2 = 815
     let result2 = find_kills_in_order(&mut layout, result1.1 as i32, result1.2 as i32);
     println!("Part 2 = {}", result2[199]);
 

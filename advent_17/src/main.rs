@@ -581,7 +581,7 @@ fn part_2(orig_codes: Vec<i64>) {
     // B = "R", "6", "L", "8", "R", "10"
     // C = "L", "8", "R", "4", "R", "4", "R", "6"
     // Ans = A, B, A, C, A, B, C, A, B, C
-    // Worked out by hand - can we compute it?
+    // Worked out by hand - can we compute it? Yes we can!
     let raw_result = check_a(&moves);
     println!("{:?}", raw_result);
 

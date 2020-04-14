@@ -75,7 +75,7 @@ def eliminate_deadend(node, x, y):
         eliminate_deadend(prev, *node.links[0])
     del NODES[(x, y)]
 
-# Second pass to remove any dead - ends
+# Second pass to remove any dead-ends
 for y in range(len(ORIG_DATA)):
     for x in range(len(ORIG_DATA[0])):
         if (x, y) in NODES:
