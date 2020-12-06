@@ -30,7 +30,6 @@ Note: expect to see very bad Rust code ;)
 ### Part 2
 * Added jumps, less than and equals.
 
-
 ## Day 6
 ### Part 1
 * Create a graph of the planets based on which orbits which.
