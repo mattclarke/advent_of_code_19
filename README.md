@@ -146,7 +146,7 @@ Note: expect to see very bad Rust code ;)
     * This gave me the correct answer, but isn't technically correct as one of the examples fails.
     * This is because there is a "lock" between two of the robots which means we get less steps than we should.
 * A better solution from the web:
-    * For each kay and robot do a breadth first search to get the distances and doors between it and the other keys.
+    * For each key and robot do a breadth first search to get the distances and doors between it and the other keys.
     * Then a shortest path search where places to visit are queued up if we have the appropriate keys.
     * The queue is ordered so the shortest distance is always first (using `heapq`).
 
