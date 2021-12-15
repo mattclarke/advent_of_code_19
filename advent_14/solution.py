@@ -1,13 +1,25 @@
+from collections import defaultdict
+
 input_data = ""
 
 with open("input_data.txt") as f:
     input_data = f.read()
 
+# input_data = """
+# 10 ORE => 10 A
+# 1 ORE => 1 B
+# 7 A, 1 B => 1 C
+# 7 A, 1 C => 1 D
+# 7 A, 1 D => 1 E
+# 7 A, 1 E => 1 FUEL
+# """
+
 
 YIELDS = {}
 RECIPES = {}
 
-lines = input_data.split('\n')
+lines = input_data.strip().split('\n')
+print(lines)
 
 for l in lines:
     _input, _output = l.split('=>')
@@ -19,53 +31,59 @@ for l in lines:
         num, _name = i.strip().split(' ')
         RECIPES[name].append((_name, int(num)))
 
-TOTAL_ORE = 1_000_000_000_000  # For part 2
+# print(RECIPES)
+# print(YIELDS)
 
 
-def create_fuel(continous):
-    total_ore_used = 0
-    fuel_produced = 0
-    leftovers = {}
+def solve(num_fuel=1):
+    leftovers = defaultdict(lambda: 0)
+    reactions = defaultdict(lambda: 0)
+    reactions["FUEL"] = num_fuel
 
-    while True:
-        ingredients = RECIPES["FUEL"][:]
+    ore_count = 0
 
-        while len(ingredients) > 0:
-            name, amount_needed = ingredients.pop(0)
-            recipe = RECIPES[name]
-            amount_total = leftovers.get(name, 0)
-            leftovers[name] = 0
+    while reactions:
+        new_reactions = defaultdict(lambda: 0)
+        for n,v in reactions.items():
+            needed = v
 
-            while amount_total < amount_needed:
-                if recipe[0][0] == "ORE":
-                    total_ore_used += recipe[0][1]
+            recipe = RECIPES[n]
+            for rn, rv in recipe:
+                total = rv * needed
+                if rn == "ORE":
+                    ore_count += total
+                    continue
+                if leftovers[rn] > total:
+                    leftovers[rn] -= total
+                    continue
                 else:
-                    for r in recipe:
-                        ingredients.append(r)
-                amount_total += YIELDS[name]
-            leftovers[name] = amount_total - amount_needed
+                    total -= leftovers[rn]
+                    leftovers[rn] = 0
 
-        if not continous:
-            break
-
-        if total_ore_used > TOTAL_ORE:
-            # Takes hours to get here
-            break
-        fuel_produced += 1
-
-        # Create an estimate
-        if fuel_produced % 100 == 0:
-            ore_per_fuel = total_ore_used // fuel_produced
-            estimate = TOTAL_ORE // ore_per_fuel
-            print(f"Estimate = {estimate}")
-
-    return total_ore_used, fuel_produced
+                num_reactions = total // YIELDS[rn]
+                b = total % YIELDS[rn]
+                if b != 0:
+                    num_reactions += 1
+                    leftovers[rn] += YIELDS[rn] - b
+                new_reactions[rn] += num_reactions
+        reactions = new_reactions
+    return ore_count
 
 # Part 1 = 579797
-ore_used, _ = create_fuel(False)
-print(f"Part 1 total ORE = {ore_used}")
+print(f"Part 1 total ORE = {solve(1)}")
 
 # Part 2 = 2521844
-ore_used, fuel_produced = create_fuel(True)
-print(f"Part 2 total ORE = {ore_used}, FUEL = {fuel_produced}")
+ORE = 1000000000000
+low = 1
+high = 1000000000
 
+while True:
+    mid = low + (high - low) // 2
+    ans = solve(mid)
+    if ans > ORE:
+        high = mid - 1
+    else:
+        low = mid + 1
+    if abs(high - low) == 1:
+        print(f"Part 2 total fuel = {mid}")
+        break
