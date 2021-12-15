@@ -84,7 +84,7 @@ Note: expect to see very bad Rust code ;)
 ### Part 2
 * Needed some help from the internet.
 * Group the x properties for all the moons together, same for y and z.
-* Run the simulation for a bit: 
+* Run the simulation for a bit:
     * Record the count when the x properties match their initial state.
     * Record the count when the y properties match their initial state.
     * Record the count when the z properties match their initial state.
@@ -101,15 +101,18 @@ Note: expect to see very bad Rust code ;)
 * Back calculate starting from `1 FUEL`.
 ### Part 2
 * A bit brute force: keep making fuel and calculate the average ore cost as we go.
-* Once the average stabilises we have the answer (my result was one too high! Need to "floor" something?).
-* Is there a better way?
+* Once the average stabilises after a long time, we have the answer (my result was one too high! Need to "floor"
+something?).
+* Is there a quicker way? Yes, part 1 can be sped up using maths rather than an incrementing loop. Then part 2 can be
+done using a binary search until we find the total ore closest but not exceeding the available ore.
 
 ## Day 15
 ### Part 1
 * Shortest path calculation.
 ### Part 2
 * Create a queue of squares where oxygen reaches.
-* For each item in queue, add oxygen to adjacent squares and add those squares to the queue once the queue is empty (time += 1).
+* For each item in queue, add oxygen to adjacent squares and add those squares to the queue once the queue is empty
+(time += 1).
 * And repeat until all have oxygen.
 
 ## Day 16
@@ -141,7 +144,8 @@ Note: expect to see very bad Rust code ;)
 * Stop when we have all the keys and the number of steps is the answer
 ### Part 2
 * Needed some help:
-    * Someone on the net said you could just treat each robot separately by assuming all the other robots keys have been collected.
+    * Someone on the net said you could just treat each robot separately by assuming all the other robots keys have been
+     collected.
     * Then it is just a case of adding together the  number of steps for all four robots.
     * This gave me the correct answer, but isn't technically correct as one of the examples fails.
     * This is because there is a "lock" between two of the robots which means we get less steps than we should.
@@ -177,7 +181,7 @@ Note: expect to see very bad Rust code ;)
 * Simple enough: can just create functions to do the three actions and do it for the whole deck.
 * Can be simplified to just track the card we are interested in (big speed-up)
 ### Part 2
-* Found this really difficult as had no idea where to begin, so needed internet help. 
+* Found this really difficult as had no idea where to begin, so needed internet help.
 * Great puzzle though - I learned a lot.
 * Easiest solution to understand:
     * The simplified functions from part 1 are of the linear form ax + b give or take the mod stuff.
