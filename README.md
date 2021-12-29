@@ -182,7 +182,7 @@ done using a binary search until we find the total ore closest but not exceeding
 * Can be simplified to just track the card we are interested in (big speed-up)
 ### Part 2
 * Found this really difficult as had no idea where to begin, so needed internet help.
-* Great puzzle though - I learned a lot.
+* Great puzzle though as really educational ;)
 * Easiest solution to understand:
     * The simplified functions from part 1 are of the linear form ax + b give or take the mod stuff.
     * Going through the commands is essentially h(g(f(x)) for however many commands there are.
