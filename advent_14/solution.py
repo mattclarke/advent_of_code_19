@@ -44,7 +44,7 @@ def solve(num_fuel=1):
 
     while reactions:
         new_reactions = defaultdict(lambda: 0)
-        for n,v in reactions.items():
+        for n, v in reactions.items():
             needed = v
 
             recipe = RECIPES[n]
@@ -69,13 +69,14 @@ def solve(num_fuel=1):
         reactions = new_reactions
     return ore_count
 
+
 # Part 1 = 579797
 print(f"Part 1 total ORE = {solve(1)}")
 
 # Part 2 = 2521844
 ORE = 1000000000000
 low = 1
-high = 1000000000
+high = 1_000_000_000
 
 while True:
     mid = low + (high - low) // 2
